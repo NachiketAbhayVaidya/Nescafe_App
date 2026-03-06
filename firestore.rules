@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper: check admin claim ──────────────────────────────────────────
+    function isAdmin() {
+      return request.auth != null && request.auth.token.role == 'admin';
+    }
+
+    function isLoggedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // ── Users collection ───────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);           // customer creates their own doc
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── Menu collection ────────────────────────────────────────────────────
+    match /menu/{itemId} {
+      allow read: if isLoggedIn();                // all logged-in users can view menu
+      allow create, update, delete: if isAdmin(); // only admin can manage menu
+    }
+
+    // ── Orders collection ──────────────────────────────────────────────────
+    match /orders/{orderId} {
+      // customers can read their own orders; admin can read all
+      allow read: if isAdmin() || 
+                     (isLoggedIn() && resource.data.customerId == request.auth.uid);
+
+      // customers can place new orders
+      allow create: if isLoggedIn() && 
+                       request.resource.data.customerId == request.auth.uid &&
+                       request.resource.data.status == 'placed';
+
+      // only admin can update status (placed → in_process → delivered)
+      allow update: if isAdmin();
+
+      // no one can delete orders
+      allow delete: if false;
+    }
+  }
+}
