@@ -1,0 +1,13 @@
+# Copy this file to .env and fill in real values. Never commit the real .env to git.
+
+# From Razorpay Dashboard -> Settings -> API Keys
+# Use the TEST keys while developing, LIVE keys only once Atul's KYC is approved.
+RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxx
+RAZORPAY_KEY_SECRET=xxxxxxxxxxxxxxxxxxxxxxxx
+
+# From Razorpay Dashboard -> Settings -> Webhooks, after you add the webhook URL
+# (this is a DIFFERENT secret from the API key above)
+RAZORPAY_WEBHOOK_SECRET=xxxxxxxxxxxxxxxxxxxxxxxx
+
+# Path to the Firebase service account JSON already used elsewhere in this project
+FIREBASE_SERVICE_ACCOUNT_PATH=./serviceAccountKey.json.json

@@ -46,6 +46,11 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Backend secrets
+.env
+backend_venv/
+backend/.venv/
+
 # Firebase service keys
 serviceAccountKey*.json
 *.secret.json
