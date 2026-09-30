@@ -25,6 +25,7 @@ def create_razorpay_order(amount_rupees: float, receipt: str) -> dict:
         "amount": amount_paise,
         "currency": "INR",
         "receipt": receipt,
+        "notes": {"order_id": receipt},
         "payment_capture": 1,  # auto-capture on successful payment
     })
 
@@ -42,6 +43,17 @@ def verify_payment_signature(razorpay_order_id: str, razorpay_payment_id: str, r
         return True
     except razorpay.errors.SignatureVerificationError:
         return False
+
+
+def find_captured_payment_id(razorpay_order_id: str) -> str | None:
+    """Asks Razorpay itself whether this order has a successful payment.
+    Used to reconcile orders when the app never got (or lost) the success
+    callback, e.g. the customer pressed back or the app was killed mid-payment."""
+    result = client.order.payments(razorpay_order_id)
+    for payment in result.get("items", []):
+        if payment.get("status") == "captured":
+            return payment["id"]
+    return None
 
 
 def verify_webhook_signature(raw_body: bytes, received_signature: str) -> bool:

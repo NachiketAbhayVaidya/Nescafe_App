@@ -37,9 +37,11 @@ class OrderModel {
   final List<OrderItem> items;
   final double totalAmount;
   final String status; // 'placed' | 'in_process' | 'delivered'
+  final String paymentStatus; // 'pending' | 'paid' | 'failed'
   final bool isPrebooked;
   final DateTime? prebookTime;
   final DateTime createdAt;
+  final String? razorpayOrderId; // set once a Razorpay checkout was started
 
   OrderModel({
     required this.id,
@@ -48,9 +50,11 @@ class OrderModel {
     required this.items,
     required this.totalAmount,
     required this.status,
+    required this.paymentStatus,
     required this.isPrebooked,
     this.prebookTime,
     required this.createdAt,
+    this.razorpayOrderId,
   });
 
   factory OrderModel.fromDoc(DocumentSnapshot doc) {
@@ -64,6 +68,7 @@ class OrderModel {
           .toList(),
       totalAmount: (data['totalAmount'] ?? 0).toDouble(),
       status: data['status'] ?? 'placed',
+      paymentStatus: data['paymentStatus'] ?? 'pending',
       isPrebooked: data['isPrebooked'] ?? false,
       prebookTime: data['prebookTime'] != null
           ? (data['prebookTime'] as Timestamp).toDate()
@@ -71,6 +76,7 @@ class OrderModel {
       createdAt: data['createdAt'] != null
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
+      razorpayOrderId: data['razorpayOrderId'] as String?,
     );
   }
 }

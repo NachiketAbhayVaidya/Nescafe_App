@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'auth_service.dart';
+import 'notification_service.dart';
+import 'order_model.dart';
 import 'order_service.dart';
 import 'constants.dart';
 import 'admin_orders_screen.dart';
@@ -17,6 +21,7 @@ class _AdminDashboardState extends State<AdminDashboard>
     with TickerProviderStateMixin {
   final _orderService = OrderService();
   final _authService = AuthService();
+  StreamSubscription<OrderModel>? _paidSub;
 
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -35,18 +40,25 @@ class _AdminDashboardState extends State<AdminDashboard>
         .animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
     _fadeController.forward();
     _slideController.forward();
+
+    // One beep each time a customer's payment comes through.
+    _paidSub = _orderService.newlyPaidOrdersStream().listen((order) {
+      NotificationService().beepForPaidOrder(customerName: order.customerName, amount: order.totalAmount);
+    }, onError: (_) {});
   }
 
   @override
   void dispose() {
+    _paidSub?.cancel();
     _fadeController.dispose();
     _slideController.dispose();
     super.dispose();
   }
 
   Future<void> _logout() async {
+    // AuthGate (in main.dart) automatically swaps to LoginScreen once the
+    // auth state changes — no manual navigation needed here.
     await _authService.logout();
-    if (mounted) Navigator.pushReplacementNamed(context, '/login');
   }
 
   @override
@@ -55,7 +67,7 @@ class _AdminDashboardState extends State<AdminDashboard>
     final adminName = user?.email?.split('@').first ?? 'Admin';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1117),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnim,
@@ -78,7 +90,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                                 style: const TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 14,
-                                  color: Color(0xFF888888),
+                                  color: AppColors.textMedium,
                                 ),
                               ),
                               Text(
@@ -87,7 +99,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                                   fontFamily: 'Poppins',
                                   fontSize: 26,
                                   fontWeight: FontWeight.w700,
-                                  color: Colors.white,
+                                  color: AppColors.textDark,
                                   letterSpacing: -0.5,
                                 ),
                               ),
@@ -101,12 +113,12 @@ class _AdminDashboardState extends State<AdminDashboard>
                             width: 44,
                             height: 44,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1E1F26),
+                              color: AppColors.surface,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFF2A2B35)),
+                              border: Border.all(color: const Color(0xFFEEEEEE)),
                             ),
                             child: const Icon(Icons.logout_rounded,
-                                color: Color(0xFF888888), size: 20),
+                                color: AppColors.textMedium, size: 20),
                           ),
                         ),
                       ],
@@ -208,7 +220,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                         fontFamily: 'Poppins',
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF555555),
+                        color: AppColors.textLight,
                         letterSpacing: 1.5,
                       ),
                     ),
@@ -274,7 +286,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                         fontFamily: 'Poppins',
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF555555),
+                        color: AppColors.textLight,
                         letterSpacing: 1.5,
                       ),
                     ),
@@ -331,7 +343,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                             fontFamily: 'Poppins',
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF555555),
+                            color: AppColors.textLight,
                             letterSpacing: 1.5,
                           ),
                         ),
@@ -367,17 +379,17 @@ class _AdminDashboardState extends State<AdminDashboard>
                           child: Container(
                             padding: const EdgeInsets.all(24),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1E1F26),
+                              color: AppColors.surface,
                               borderRadius: BorderRadius.circular(16),
                               border:
-                                  Border.all(color: const Color(0xFF2A2B35)),
+                                  Border.all(color: const Color(0xFFEEEEEE)),
                             ),
                             child: const Center(
                               child: Text(
                                 'No new orders right now',
                                 style: TextStyle(
                                   fontFamily: 'Poppins',
-                                  color: Color(0xFF555555),
+                                  color: AppColors.textLight,
                                   fontSize: 14,
                                 ),
                               ),
@@ -453,9 +465,9 @@ class _StatusCard extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.all(wide ? 16 : 18),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1F26),
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFF2A2B35)),
+          border: Border.all(color: const Color(0xFFEEEEEE)),
         ),
         child: wide
             ? Row(
@@ -478,7 +490,7 @@ class _StatusCard extends StatelessWidget {
                             style: const TextStyle(
                                 fontFamily: 'Poppins',
                                 fontSize: 13,
-                                color: Color(0xFF888888))),
+                                color: AppColors.textMedium)),
                         Text('$count orders',
                             style: TextStyle(
                                 fontFamily: 'Poppins',
@@ -521,7 +533,7 @@ class _StatusCard extends StatelessWidget {
                     style: const TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 12,
-                      color: Color(0xFF888888),
+                      color: AppColors.textMedium,
                     ),
                   ),
                 ],
@@ -605,9 +617,9 @@ class _RecentOrderTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1F26),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF2A2B35)),
+        border: Border.all(color: const Color(0xFFEEEEEE)),
       ),
       child: Row(
         children: [
@@ -632,7 +644,7 @@ class _RecentOrderTile extends StatelessWidget {
                     fontFamily: 'Poppins',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: AppColors.textDark,
                   ),
                 ),
                 Text(
@@ -640,7 +652,7 @@ class _RecentOrderTile extends StatelessWidget {
                   style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 12,
-                    color: Color(0xFF888888),
+                    color: AppColors.textMedium,
                   ),
                 ),
               ],

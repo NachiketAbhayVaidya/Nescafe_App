@@ -29,3 +29,11 @@ class VerifyPaymentRequest(BaseModel):
 class VerifyPaymentResponse(BaseModel):
     success: bool
     message: str
+
+
+class SyncPaymentRequest(BaseModel):
+    order_id: str  # the Firestore 'orders' document ID
+
+
+class SyncPaymentResponse(BaseModel):
+    paid: bool
